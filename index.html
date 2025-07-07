@@ -1,213 +1,292 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>&lt;geolocation&gt; Demo</title>
-    <meta charset="utf8">
-  </head>
-  <body>
-    Select your location: <geo-location id="location"><span slot="text">🗺️</span></geo-location>
-    <p id="result" style="display: none"></p>
-  </body>
-  <script>
-    const loc = document.getElementById("location");
-    function show(msg) {
-      const res = document.getElementById("result");
-      res.textContent = msg;
-      res.style.display = "block";
-    }
-    loc.addEventListener("location", e => {
-      show(`Got location: ${e.coords.latitude}, ${e.coords.longitude}`);
-    });
-    loc.addEventListener("locationerror", e => {
-      show(`Error: ${e.message}`);
-    });
-  </script>
 
-  <template id="geolocation-template">
-    <link rel="stylesheet" href="leaflet.css"/>
-    <script src="leaflet.js"></script>
-    <style>
-      #pick {
-        anchor-name: --pick;
-      }
-      #container {
-        display: none;
-      }
-      #container.open {
-        border: 1px solid black;
-        border-radius: 4px;
-        padding: 4px;
-        display: block flex;
-        width: 480px;
-        height: 320px;
-        position: fixed;
-        position-anchor: --pick;
-        position-area: block-start;
-        position-try: flip-block;
-      }
-      #map {
-        height: 100%;
-        flex-grow: 1;
-      }
-      #controls {
-        display: block flex;
-        flex-direction: column;
-        justify-content: end;
-        margin: 4px;
-        padding: 4px;
-      }
-      #controls button {
-        border: 1px solid black;
-        border-radius: 4px;
-        width: 100%;
-        margin: 4px;
-        padding: 4px;
-      }
-      #cancel {
-        background-color: white;
-        color: black;
-      }
-      #ok[disabled] {
-        background-color: lightgrey;
-        color: black;
-      }
-      #ok {
-        background-color: blue;
-        color: white;
-      }
-    </style>
-    <!-- Hacky DOM: this needs more than this -->
-    <button id=pick><slot name="text">Select Location</slot></button>
-    <div id=container>
-      <div id=map></div>
-      <div id=controls>
-        <button id=cancel>Cancel</button>
-        <button id=ok disabled>Ok</button>
+<head>
+  <title>&lt;geolocation&gt; Demo</title>
+  <meta charset="utf8">
+  <style>
+    :root {
+      font-family: sans-serif;
+    }
+
+    hr {
+      margin-top: 600px;
+    }
+  </style>
+</head>
+
+<body>
+  Select your location: <geo-location id="location"><span slot="text">🗺️</span></geo-location>
+  <div id="result"></div>
+  <hr>
+  Update your actual location <geo-location id=truth nofind></geo-location>
+</body>
+<script>
+  const loc = document.getElementById("location");
+  function show(msg) {
+    const res = document.createElement("p");
+    res.textContent = msg;
+    document.getElementById("result").appendChild(res);
+  }
+  loc.addEventListener("location", e => {
+    show(`Got location: ${e.coords.latitude}, ${e.coords.longitude}`);
+  });
+  loc.addEventListener("locationerror", e => {
+    show(`Error: ${e.message}`);
+  });
+</script>
+
+<template id="geolocation-template">
+  <link rel="stylesheet" href="leaflet.css" />
+  <script src="leaflet.js"></script>
+  <style>
+    #pick {
+      anchor-name: --pick;
+    }
+
+    #container {
+      display: none;
+      background-color: white;
+    }
+
+    #container.open {
+      border: 1px solid black;
+      border-radius: 4px;
+      padding: 4px;
+      display: block flex;
+      width: 640px;
+      height: 480px;
+      position: fixed;
+      position-anchor: --pick;
+      position-area: block-start;
+      position-try: flip-block;
+    }
+
+    #map {
+      height: 100%;
+      flex-grow: 1;
+    }
+
+    #controls {
+      display: block flex;
+      flex-direction: column;
+      justify-content: end;
+      margin: 4px;
+      padding: 4px;
+    }
+
+    #controls div#top {
+      margin: 0;
+      padding: 0;
+      display: block flex;
+      flex-grow: 1;
+      flex-direction: column;
+    }
+
+    #controls button {
+      border: 1px solid black;
+      border-radius: 4px;
+      width: 100%;
+      margin: 4px;
+      padding: 4px;
+    }
+
+    #cancel {
+      background-color: white;
+      color: black;
+    }
+
+    #ok[disabled] {
+      background-color: lightgrey;
+      color: black;
+    }
+
+    #ok {
+      background-color: blue;
+      color: white;
+    }
+  </style>
+  <!-- Hacky DOM: this needs more than this -->
+  <button id=pick>
+    <slot name="text">Select Location</slot>
+  </button>
+  <div id=container>
+    <div id=map></div>
+    <div id=controls>
+      <div id=top>
+        <button id=cancel>Deny Request</button>
       </div>
+      <button id=find>Find Me</button>
+      <button id=follow>Follow Me</button>
+      <button id=ok disabled>Share Location</button>
     </div>
-  </template>
-  <script>
-    const defaultLocation = [-33.858888, 151.210113];
-    const markerOptions = {
-      alt: "selected location",
-      draggable: true,
-      autoPan: true,
-    };
-    class GeolocationEvent extends Event {
-      constructor(options) {
-        super("location", options);
-        // TODO: It's not possible to construct GeolocationPosition.
-        this.coords = options.coords;
-        this.timestamp = options.timestamp;
+  </div>
+</template>
+<script>
+  const defaultLocation = [-33.858888, 151.210113];
+  const markerOptions = {
+    alt: "selected location",
+    draggable: true,
+    autoPan: true,
+  };
+  class GeolocationEvent extends Event {
+    constructor(options) {
+      super("location", options);
+      // TODO: It's not possible to construct GeolocationPosition.
+      this.coords = options.coords;
+      this.timestamp = options.timestamp;
+    }
+  }
+  class GeolocationElement extends HTMLElement {
+    constructor() {
+      super();
+      this._internals = this.attachInternals();
+    }
+
+    connectedCallback() {
+      const shadow = this.attachShadow({ mode: "open" });
+      const template = document.getElementById("geolocation-template");
+      const copy = template.content.cloneNode(true);
+      const pick = copy.getElementById("pick");
+      pick.addEventListener("click", e => {
+        this.toggle();
+      });
+      copy.getElementById("ok").addEventListener("click", e => this.pick(null, true));
+      copy.getElementById("cancel").addEventListener("click", e => this.cancel());
+      if (this.hasAttribute("nofind")) {
+        copy.getElementById("find").style.display = "none";
+        copy.getElementById("follow").style.display = "none";
+      }
+      shadow.appendChild(copy);
+    }
+
+    toggle(to) {
+      let c = this.shadowRoot.getElementById("container");
+      if (typeof to === "undefined") {
+        c.classList.toggle("open");
+        this.makeMap();
+      } else if (to) {
+        c.classList.add("open");
+        this.makeMap();
+      } else {
+        c.classList.remove("open");
       }
     }
-    class GeolocationElement extends HTMLElement {
-      constructor() {
-        super();
-        this._internals = this.attachInternals();
-      }
 
-      connectedCallback() {
-        const shadow = this.attachShadow({ mode: "open" });
-        const template = document.getElementById("geolocation-template");
-        const copy = template.content.cloneNode(true);
-        const pick = copy.getElementById("pick");
-        pick.addEventListener("click", e => {
-          this.toggle();
+    makeMap() {
+      this._following = false;
+      if (!this._map) {
+        let m = this.shadowRoot.getElementById("map");
+        this._map = L.map(m).setView(defaultLocation, 13);
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          doubleClickZoom: false,
+          attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(this._map);
+        this._map.on("click", e => {
+          this.pick(e.latlng, false);
         });
-        copy.getElementById("ok").addEventListener("click", e => this.pick(null, true));
-        copy.getElementById("cancel").addEventListener("click", e => this.cancel());
-        shadow.appendChild(copy);
-      }
+        this._map.on("dblclick", e => {
+          this.pick(e.latlng, true);
+        });
 
-      toggle(to) {
-        let c = this.shadowRoot.getElementById("container");
-        if (typeof to === "undefined") {
-          c.classList.toggle("open");
-          this.makeMap();
-        } else if (to) {
-          c.classList.add("open");
-          this.makeMap();
-        } else {
-          c.classList.remove("open");
+        markerOptions.icon = new L.Icon.Default({ imagePath: "images/" });
+
+        function fromValue(v) {
+          const [lat, lng] = v.split(',');
+          return lat && new L.LatLng(lat, lng) || null;
         }
+        this.shadowRoot.getElementById("find").addEventListener("click", e => {
+          this.pick(fromValue(document.getElementById("truth").value));
+          this._following = false;
+        });
+        this.shadowRoot.getElementById("follow").addEventListener("click", e => {
+          this.pick(fromValue(document.getElementById("truth").value));
+          this._following = true;
+        });
+        document.getElementById("truth").addEventListener("location", e => {
+          if (this._following) {
+            const pos = new L.LatLng(e.coords.latitude, e.coords.longitude);
+            this.pick(pos, !this.isOpen());
+          }
+        });
+
       }
+    }
 
-      makeMap() {
-        if (!this._map) {
-          let m = this.shadowRoot.getElementById("map");
-          this._map = L.map(m).setView(defaultLocation, 13);
-          L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            doubleClickZoom: false,
-            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          }).addTo(this._map);
-          this._map.on("click", e => {
-            this.pick(e.latlng, false);
-          });
-          this._map.on("dblclick", e => {
-            this.pick(e.latlng, true);
-          });
-
-          markerOptions.icon = new L.Icon.Default({ imagePath: "images/" });
-        }
+    cancel() {
+      if (this._marker) {
+        this._marker.remove();
       }
+      this.toggle(false);
+      this.dispatchEvent(new ErrorEvent("locationerror", { message: "cancelled" }));
+    }
 
-      cancel() {
+    pick(pos, dispatch) {
+      if (pos) {
         if (this._marker) {
           this._marker.remove();
         }
+        this._marker = L.marker(pos, markerOptions);
+        this._marker.addTo(this._map);
+
+        this.shadowRoot.getElementById("ok").disabled = false;
+      } else {
+        if (!this._marker) { return; }
+        pos = this._marker.getLatLng();
+      }
+      if (dispatch) {
         this.toggle(false);
-        this.dispatchEvent(new ErrorEvent("locationerror", { message: "cancelled" }));
-      }
-
-      pick(pos, dispatch) {
-        if (pos) {
-          if (this._marker) {
-            this._marker.remove();
-          }
-          this._marker = L.marker(pos, markerOptions);
-          this._marker.addTo(this._map);
-
-          this.shadowRoot.getElementById("ok").disabled = false;
-        } else {
-          if (!this._marker) { return; }
-          pos = this._marker.getLatLng();
-        }
-        if (dispatch) {
-          this.toggle(false);
-          this.dispatchEvent(new GeolocationEvent({
-            coords: {
-              latitude: pos.lat,
-              longitude: pos.lng,
-            },
-            timestamp: Date.now(),
-          }));
-        }
-      }
-
-      get value() {
-        const pos = this._marker?.getLatLng();
-        if (pos) {
-          return `${pos.lat},${pos.lng}`;
-        }
-        return "";
-      }
-
-      set value(v) {
-        this.makeMap();
-        let [lat, lng] = v.split(',');
-        let pos = new L.LatLng(lat, lng);
-        if (!this._marker) {
-          this._marker = L.marker(pos, markerOptions);
-          this._marker.addTo(this._map);
-        } else {
-          this._marker.setLatLng(pos);
-        }
-        this._map.flyTo(pos);
-        this._value = v;
+        this.chosen(pos);
+        this.dispatchEvent(new GeolocationEvent(this._value));
       }
     }
-    customElements.define("geo-location", GeolocationElement);
-  </script>
+
+    isOpen() {
+      return this.shadowRoot.getElementById("container").checkVisibility();
+    }
+
+    chosen(pos) {
+      const v = {
+        coords: {
+          latitude: pos.lat,
+          longitude: pos.lng,
+        },
+        timestamp: Date.now(),
+      };
+      this._value = v;
+    }
+
+    get value() {
+      const pos = this._value;
+      if (pos) {
+        return `${pos.coords.latitude},${pos.coords.longitude}`;
+      }
+      return "";
+    }
+
+    set value(v) {
+      if (!v) {
+        return;
+      }
+
+      this.makeMap();
+      let [lat, lng] = v.split(',');
+      let pos = new L.LatLng(lat, lng);
+      this.chosen(pos);
+      if (!this._marker) {
+        this._marker = L.marker(pos, markerOptions);
+        this._marker.addTo(this._map);
+      } else {
+        this._marker.setLatLng(pos);
+      }
+      if (this.isOpen()) {
+        this._map.flyTo(pos);
+        this.shadowRoot.getElementById("ok").disabled = false;
+      }
+    }
+  }
+  customElements.define("geo-location", GeolocationElement);
+</script>
+
 </html>

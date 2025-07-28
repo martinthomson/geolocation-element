@@ -3,7 +3,7 @@
 
 <head>
   <title>&lt;geolocation&gt; Demo</title>
-  <meta charset="utf8">
+  <meta charset=utf8>
   <style>
     :root {
       font-family: sans-serif;
@@ -16,8 +16,8 @@
 </head>
 
 <body>
-  Select your location: <geo-location id="location"><span slot="text">🗺️</span></geo-location>
-  <div id="result"></div>
+  Select your location: <geo-location id=location><span slot=text>🗺️</span></geo-location>
+  <div id=result></div>
   <hr>
   Update your actual location <geo-location id=truth nofind></geo-location>
 </body>
@@ -36,8 +36,8 @@
   });
 </script>
 
-<template id="geolocation-template">
-  <link rel="stylesheet" href="leaflet.css" />
+<template id=geolocation-template>
+  <link rel=stylesheet href="leaflet.css" />
   <script src="leaflet.js"></script>
   <style>
     #pick {
@@ -58,7 +58,7 @@
       height: 480px;
       position: fixed;
       position-anchor: --pick;
-      position-area: block-start;
+      position-area: bottom span-right;
       position-try: flip-block;
     }
 
@@ -108,7 +108,7 @@
   </style>
   <!-- Hacky DOM: this needs more than this -->
   <button id=pick>
-    <slot name="text">Select Location</slot>
+    <slot name=text>Select Location</slot>
   </button>
   <div id=container>
     <div id=map></div>
@@ -149,10 +149,10 @@
       const copy = template.content.cloneNode(true);
       const pick = copy.getElementById("pick");
       pick.addEventListener("click", e => {
-        this.toggle();
+        this.#toggle();
       });
-      copy.getElementById("ok").addEventListener("click", e => this.pick(null, true));
-      copy.getElementById("cancel").addEventListener("click", e => this.cancel());
+      copy.getElementById("ok").addEventListener("click", e => this.#pick(null, true));
+      copy.getElementById("cancel").addEventListener("click", e => this.#cancel());
       if (this.hasAttribute("nofind")) {
         copy.getElementById("find").style.display = "none";
         copy.getElementById("follow").style.display = "none";
@@ -160,20 +160,20 @@
       shadow.appendChild(copy);
     }
 
-    toggle(to) {
+    #toggle(to) {
       let c = this.shadowRoot.getElementById("container");
       if (typeof to === "undefined") {
         c.classList.toggle("open");
-        this.makeMap();
+        this.#makeMap();
       } else if (to) {
         c.classList.add("open");
-        this.makeMap();
+        this.#makeMap();
       } else {
         c.classList.remove("open");
       }
     }
 
-    makeMap() {
+    #makeMap() {
       this._following = false;
       if (!this._map) {
         let m = this.shadowRoot.getElementById("map");
@@ -184,10 +184,10 @@
           attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         }).addTo(this._map);
         this._map.on("click", e => {
-          this.pick(e.latlng, false);
+          this.#pick(e.latlng, false);
         });
         this._map.on("dblclick", e => {
-          this.pick(e.latlng, true);
+          this.#pick(e.latlng, true);
         });
 
         markerOptions.icon = new L.Icon.Default({ imagePath: "images/" });
@@ -197,32 +197,32 @@
           return lat && new L.LatLng(lat, lng) || null;
         }
         this.shadowRoot.getElementById("find").addEventListener("click", e => {
-          this.pick(fromValue(document.getElementById("truth").value));
+          this.#pick(fromValue(document.getElementById("truth").value));
           this._following = false;
         });
         this.shadowRoot.getElementById("follow").addEventListener("click", e => {
-          this.pick(fromValue(document.getElementById("truth").value));
+          this.#pick(fromValue(document.getElementById("truth").value));
           this._following = true;
         });
         document.getElementById("truth").addEventListener("location", e => {
           if (this._following) {
             const pos = new L.LatLng(e.coords.latitude, e.coords.longitude);
-            this.pick(pos, !this.isOpen());
+            this.#pick(pos, !this.#isOpen());
           }
         });
 
       }
     }
 
-    cancel() {
+    #cancel() {
       if (this._marker) {
         this._marker.remove();
       }
-      this.toggle(false);
+      this.#toggle(false);
       this.dispatchEvent(new ErrorEvent("locationerror", { message: "cancelled" }));
     }
 
-    pick(pos, dispatch) {
+    #pick(pos, dispatch) {
       if (pos) {
         if (this._marker) {
           this._marker.remove();
@@ -236,17 +236,17 @@
         pos = this._marker.getLatLng();
       }
       if (dispatch) {
-        this.toggle(false);
-        this.chosen(pos);
+        this.#toggle(false);
+        this.#chosen(pos);
         this.dispatchEvent(new GeolocationEvent(this._value));
       }
     }
 
-    isOpen() {
+    #isOpen() {
       return this.shadowRoot.getElementById("container").checkVisibility();
     }
 
-    chosen(pos) {
+    #chosen(pos) {
       const v = {
         coords: {
           latitude: pos.lat,
@@ -270,17 +270,17 @@
         return;
       }
 
-      this.makeMap();
+      this.#makeMap();
       let [lat, lng] = v.split(',');
       let pos = new L.LatLng(lat, lng);
-      this.chosen(pos);
+      this.#chosen(pos);
       if (!this._marker) {
         this._marker = L.marker(pos, markerOptions);
         this._marker.addTo(this._map);
       } else {
         this._marker.setLatLng(pos);
       }
-      if (this.isOpen()) {
+      if (this.#isOpen()) {
         this._map.flyTo(pos);
         this.shadowRoot.getElementById("ok").disabled = false;
       }
